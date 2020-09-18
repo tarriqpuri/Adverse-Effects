@@ -1,2 +1,2 @@
-# Adverse-Effects
+# Adverse Effects
 Insight Fellowship Project
