@@ -1,3 +1,5 @@
+  GNU nano 2.9.3                                                                                                                                                                                                                                                                                                                                                                                             tables.py                                                                                                                                                                                                                                                                                                                                                                                                       
+
 #read-json.py
 
 import sys
@@ -40,11 +42,17 @@ if __name__ == "__main__":
                 .builder\
                 .appName("s3 to spark to postgres")\
                 .getOrCreate()
+        sc = spark.sparkContext
+        sc.setLogLevel("ERROR")
 
-
+        #Set Parameters for Spark Job
+        spark.conf.set("spark.sql.shuffle.partitions", 50)
+        #spark.conf.set("spark.sql.files.maxPartitionBytes", 16777216)
+        spark.conf.set("spark.sql.files.maxPartitionBytes", 32777216)
         #s3url="s3a://tarriq-spark-test/adverse-effects/drug-event-0001-of-0025.json"
-        #s3url="s3a://tarriq-spark-test/adverse-effects/subset/*"
-        s3url="s3a://tarriq-spark-test/adverse-effects/2016-Q4-drug-event-0001-of-0023.json/*"
+        s3url="s3a://tarriq-spark-test/adverse-effects/subset/*"
+        #s3url="s3a://tarriq-spark-test/adverse-effects/*"
+        #s3url="s3a://tarriq-spark-test/adverse-effects/2016-Q4-drug-event-0001-of-0023.json/*"
         #s3url="s3a://tarriq-spark-test/adverse-effects/2014-Q3-drug-event-0001-of-0017.json/*"
 
         POSTGRESQL_URL = ""
@@ -54,37 +62,38 @@ if __name__ == "__main__":
 
 
         df = spark.read.option("multiLine","true").json(s3url)
+        print(df.rdd.getNumPartitions())
+        #df.cache()
         #df.show()
         #df.printSchema()
 
         """
         #CLEAN DF (DELETE USELESS COLUMNS)
-        df = df.withColumn("results", sf.explode(sf.col("results"))).select("results.*", "results.patient.*")
-        df = df.drop("authoritynumb")
-        df = df.drop("fulfilledexpeditecriteria")
-        df = df.drop("patient.summary")
-        df = df.drop("sender")
+        df=df.withColumn("results",sf.explode(sf.col("results"))).select("results.*","results.patient.*")
+        df=df.drop("authoritynumb")
+        df=df.drop("fulfilledexpeditecriteria")
+        df=df.drop("patient.summary")
+        df=df.drop("sender")
         df.printSchema()
         """
 
 
-
         #PATIENT DF
-        patient_df = df.withColumn("results", sf.explode(sf.col("results"))).select("results.*", "results.patient.*")
-        patient_df = patient_df.drop("patient")
-        patient_df = patient_df.drop("drug")
-        patient_df = patient_df.drop("reaction")
-        patient_df = patient_df.select(flatten(patient_df.schema))
+        patient_df=df.withColumn("results",sf.explode(sf.col("results"))).select("results.*","results.patient.*")
+        patient_df=patient_df.drop("patient")
+        patient_df=patient_df.drop("drug")
+        patient_df=patient_df.drop("reaction")
+        patient_df=patient_df.select(flatten(patient_df.schema))
         #patient_df.show()
-        patient_df.printSchema()
+        #patient_df.printSchema()
 
 
         #DRUG DF
-        drug_df = df.withColumn("results",sf.explode(sf.col("results"))).select("results.safetyreportid", \
+        drug_df=df.withColumn("results",sf.explode(sf.col("results"))).select("results.safetyreportid", \
         "results.patient.drug")
         #drug_df.show()
-        drug_df = drug_df.withColumn("drug",sf.explode(sf.col("drug")))
-        drug_df = drug_df.select(flatten(drug_df.schema))
+        drug_df=drug_df.withColumn("drug",sf.explode(sf.col("drug")))
+        drug_df=drug_df.select(flatten(drug_df.schema))
         #drug_df.show()
         #drug_df.printSchema()
         #avoid arrays
@@ -110,7 +119,8 @@ if __name__ == "__main__":
         drug_df=drug_df.select('*', rank().over(window).alias('index'))
         drug_df=drug_df.withColumn("drug-key",sf.concat(sf.col('safetyreportid'),sf.lit('-'),sf.col('index')))
         #drug_df.show()
-
+        #print("Drug df length")
+        #print(drug_df.select("safetyreportid").distinct().count())
 
 
         #Reaction DF
@@ -123,7 +133,10 @@ if __name__ == "__main__":
         window = Window.partitionBy(reaction_df['safetyreportid']).orderBy(reaction_df["reactionmeddrapt"])
         reaction_df=reaction_df.select('*', rank().over(window).alias('index'))
         reaction_df=reaction_df.withColumn("reaction-key",sf.concat(sf.col('safetyreportid'),sf.lit('-'),sf.col('index')))
-        #reaction_df.show()
+        reaction_df.show()
+        #print("Reaction df length")
+        #print(reaction_df.select("safetyreportid").distinct().count())
+
 
         patient_df.write \
                 .format("jdbc") \
@@ -156,7 +169,7 @@ if __name__ == "__main__":
                 .save()
 
 
-
         spark.stop()
+
 
 
