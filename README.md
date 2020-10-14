@@ -16,7 +16,7 @@ In the United States, it is estimated that 100 000 people pass away annually due
 The data was taken from an open source API called OpenFDA. This contains 800 files with roughly 100 GB of data. Each file contains information about the patient (weight, age, etc.), the drugs they were given (brand name, dosage, route, etc.), and the reactions they experienced (headache, nausea, etc.). The data is stored as a complex nested JSON file, where there are multiple structures in arrays in structures. This can be seen in the image below. 
 
 <p align="center">
-<img src = "./images/JSON.jpg" width="800" class="center">
+<img src = "./Images/JSON.jpg" width="800" class="center">
 </p>
 
 ## Engineering challenges
