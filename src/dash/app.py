@@ -1,7 +1,6 @@
 import pickle
 import copy
 import pathlib
-from urllib import urlretrieve
 import dash
 import math
 import datetime as dt
@@ -25,23 +24,35 @@ user = 'tarriq',
 password = "insight")
 pgcursor = pgconnect.cursor()
 
-pgcursor.execute("Select column_name "
-             "from information_schema.columns "
-             "where table_name = 'patientsremovecols';"
+pgcursor.execute("SELECT column_name "
+             "FROM information_schema.columns "
+             "WHERE table_name = 'patientsremovecols';"
              )
 
 columndf = pd.DataFrame(pgcursor.fetchall())
 columndf = columndf[columndf[0] != 'safetyreportid']
-print(columndf)
+columndf = columndf[columndf[0] != 'companynumb']
+columndf = columndf[columndf[0] != 'duplicate']
+columndf = columndf[columndf[0] != 'fulfillexpeditecriteria']
+columndf = columndf[columndf[0] != 'receiptdateformat']
+columndf = columndf[columndf[0] != 'receivedateformat']
+columndf = columndf[columndf[0] != 'duplicatenumb']
+columndf = columndf[columndf[0] != 'duplicatesource']
+columndf = columndf[columndf[0] != 'reporttype']
+columndf = columndf[columndf[0] != 'safetyreportversion']
+columndf = columndf[columndf[0] != 'transmissiondateformat']
+columndf = columndf[columndf[0] != 'patientonsetageunit']
 
 d={}
-count=0
 for feat in columndf[0]:
-    count=count+1
-    print(feat)
-    query = ("select " + feat +
-             ", count(distinct(safetyreportid)), count(seriousnessdeath) "
-             "from patientsRemovecols group by " + feat + ";"
+    query = ("SELECT " + feat +
+             ", COUNT(DISTINCT(patientsRemovecols.safetyreportid)), "
+             "COUNT(DISTINCT CASE WHEN (patientsRemovecols.seriousnessdeath = '1') "
+             "THEN patientsRemovecols.safetyreportid END) "
+             "from patientsRemovecols "
+             "LEFT JOIN badcases ON patientsRemovecols.safetyreportid = badcases.safetyreportid "
+             "WHERE badcases.safetyreportid is NULL "
+             "GROUP BY " + feat + ";"
             )
     pgcursor.execute(query)
     d[feat] = pd.DataFrame(pgcursor.fetchall())
@@ -58,17 +69,19 @@ columndf = columndf[columndf[0] != 'index']
 columndf = columndf[columndf[0] != 'drug-key']
 columndf = columndf[columndf[0] != 'spl_id']
 columndf = columndf[columndf[0] != 'spl_set_id']
-columndf = columndf[columndf[0] != 'safetyreportid']
-print(columndf)
+columndf = columndf[columndf[0] != 'drugstartdate']
+columndf = columndf[columndf[0] != 'drugstartdateformat']
+columndf = columndf[columndf[0] != 'application_number']
+columndf = columndf[columndf[0] != 'package_ndc']
+columndf = columndf[columndf[0] != 'product_ndc']
 
-count=0
 for feat in columndf[0]:
-    count=count+1
-    print(feat)
     query = ("SELECT drugs." + feat +
              ", COUNT(DISTINCT(drugs.safetyreportid)), COUNT(patients.seriousnessdeath) "
              "FROM drugs INNER JOIN patients ON " 
              "drugs.safetyreportid = patients.safetyreportid "
+             "LEFT JOIN badcases ON drugs.safetyreportid = badcases.safetyreportid "
+             "WHERE badcases.safetyreportid is NULL "
              "GROUP BY " + feat + ";"
             )
     pgcursor.execute(query)
@@ -76,9 +89,9 @@ for feat in columndf[0]:
 
 
 
-pgcursor.execute("Select column_name "
-             "from information_schema.columns "
-             "where table_name = 'reactions';"
+pgcursor.execute("SELECT column_name "
+             "FROM information_schema.columns "
+             "WHERE table_name = 'reactions';"
              )
 
 
@@ -87,28 +100,23 @@ columndf = columndf[columndf[0] != 'safetyreportid']
 columndf = columndf[columndf[0] != 'index']
 columndf = columndf[columndf[0] != 'reaction-key']
 
-print(columndf)
-
-count=0
 for feat in columndf[0]:
-    count=count+1
-    print(feat)
     query = ("SELECT reactions." + feat +
              ", COUNT(DISTINCT(reactions.safetyreportid)), COUNT(patients.seriousnessdeath) "
              "FROM reactions INNER JOIN patients ON " 
              "reactions.safetyreportid = patients.safetyreportid "
+             "LEFT JOIN badcases ON reactions.safetyreportid = badcases.safetyreportid "
+             "WHERE badcases.safetyreportid is NULL "
              "GROUP BY " + feat + ";"
             )
     pgcursor.execute(query)
     d[feat] = pd.DataFrame(pgcursor.fetchall())
 
 
-print(d["occurcountry"])
 # Create controls for features
 features = [
     {"label": str(key), "value": str(key)} for key in d
 ]
-
 
 layout = dict(
     autosize=True,
@@ -125,7 +133,6 @@ app = dash.Dash(
     __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}]
 )
 server = app.server
-
 
 # Create app layout
 app.layout = html.Div(
@@ -210,19 +217,19 @@ app.layout = html.Div(
                                 html.Div(
                                     [html.H6(id="length_text"), html.P("Unique Values")],
                                     id="length",
-                                    style={'width':'20%'},
+                                    style={'width':'30%'},
                                     className="mini_container",
                                 ),
                                 html.Div(
                                     [html.H6(id="average_text"), html.P("Avg No. Cases")],
                                     id="avg",
-                                    style={'width':'20%'},
+                                    style={'width':'30%'},
                                     className="mini_container",
                                 ),
                                 html.Div(
-                                    [html.H6(id="top_text"), html.P("Most Common Value")],
-                                    id="top",
-                                    style={'width':'45%'},
+                                    [html.H6(id="null_text"), html.P("Percentage Nulls")],
+                                    id="null",
+                                    style={'width':'30%'},
                                     className="mini_container",
                                 ),
                             ],
@@ -233,7 +240,7 @@ app.layout = html.Div(
                     ],
                     id="right-column",
                     className="eight columns",
-               ),
+                ),
             ],
             className="row flex-display",
         ),
@@ -257,8 +264,6 @@ def update_figure(feature, showNull):
     else:
        x = d[feature][1]
        y = d[feature][2]
-
-
     data = [
         dict(
             type="scatter",
@@ -267,14 +272,14 @@ def update_figure(feature, showNull):
             y = y,
             name="Cases vs. Deaths",
             opacity=0,
-            hoverinfo="skip",
+            hoverinfo=" ",
         ),
         dict(
             type="scatter",
             mode="markers",
             x = x,
             y = y,
-            name="Cases vs. Deaths",
+            name=" ",
         ),
     ]
     layout_count["height"] = 390
@@ -296,6 +301,7 @@ def update_figure(feature, showNull):
     )
 def temp_figure(feature,showNull):
     layout_pie = copy.deepcopy(layout)
+    layout_pie["margin"] = dict(l=30, r=30, b=30, t=30)
     if showNull == 0:
        cleandf = d[feature].dropna()
        labels = cleandf[0]
@@ -303,8 +309,6 @@ def temp_figure(feature,showNull):
     else:
        labels = d[feature][0]
        values = d[feature][1]
-
-
     data = [
         dict(
             type="pie",
@@ -313,8 +317,9 @@ def temp_figure(feature,showNull):
             labels=labels,
             values=values,
             textinfo=None,
-            name="Well Type Breakdown",
+            name="Data Breakdown",
             hole=0.5,
+            #marker=dict(colors=[WELL_COLORS[i] for i in aggregate.index]),
             domain={"x": [0, 1], "y": [0, 1]},
         ),
     ]
@@ -324,7 +329,6 @@ def temp_figure(feature,showNull):
 
     figure = dict(data=data, layout=layout_pie)
     return figure
-
 
 
 # Selectors -> total unique values
@@ -347,16 +351,20 @@ def update_avg_text(feature):
 
 # Selectors -> total unique values
 @app.callback(
-    Output("top_text", "children"),
+    Output("null_text", "children"),
     Input('feature_selection', 'value')
 )
-def update_top_text(feature):
-    max = d[feature][1].max()
-    name = d[feature].iloc[ d[feature][1].idxmax()  , 0]
-    top = name + " (" + str(max) + " Cases)"
-    return top
+def update_null_text(feature):
+    #df[df['A'].isnull()].index.tolist()
+    if (d[feature][0].isnull().values.any()):
+        nullValue = d[feature][d[feature][0].isnull()][1]
+    else:
+        nullValue = 0
+    total = d[feature][1].sum()
+    perc = int(nullValue/total*100)
+    return ( str(perc) + " %" )
 
 
 # Main
 if __name__ == "__main__":
-    app.run_server(debug=True, port=80, host="ec2-3-88-118-29.compute-1.amazonaws.com")
+    app.run_server(debug=False, port=80, host="ec2-3-88-118-29.compute-1.amazonaws.com")
