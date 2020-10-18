@@ -9,6 +9,8 @@ The presentation slides can be found [here](https://docs.google.com/presentation
 - [Introduction](#introduction)
 - [Architecture](#architecture)
 - [Dataset](#dataset)
+- [Spark Optimization](#spark-optimization)
+- [Relational Database](#relational-database)
 
 
 ## Introduction
@@ -20,7 +22,7 @@ In the United States, it is estimated that 100 000 people pass away annually due
 The data pipeline includes S3, Spark, PostgreSQL, Airflow, and Dash. S3 stores each JSON file which is obtained through the OpenFDA API. Spark is used to make sense of the nested JSON data. This includes column explodes, date formatting, quality control, and id generation. Inspired by the schema of the JSON file, the data is split into 4 tables: Patients, Drugs, Reactions and Bad Cases. These four databases are written into PostgreSQL for ease of query. Group By queries are run to organize the data for visualization by Dash. 
 
 <p align="center">
-<img src = "./Images/tech-stack.jpg" width="800" class="center">
+<img src = "./Images/tech-stack.JPG" width="800" class="center">
 </p>
 
 ## Dataset
@@ -31,9 +33,31 @@ The data was taken from an open source API called OpenFDA. This contains 800 fil
 <img src = "./Images/JSON.jpg" width="800" class="center">
 </p>
 
-## Engineering challenges
+The goal for this project is to keep all the data from the complex JSON file in case the data scientist has a need for a particular feature. 
 
-## Trade-offs
+## Spark Optimization
+
+Spark optimization was necessary to run the spark job and eventually reduce the time to run. In order to run spark without garbage collection errors, the files were loaded into a dataframe by year. For example, roughly 50 files would have been loaded into a pyspark dataframe for the year 2016. This dataframe would then be exploded, cleaned, manipulated, and formatted before it is appended to the relevant table in the postgreSQL database. Without any further adjustments, the run time for this spark-job was 144 minutes. 
+
+The largest improvements to the run time of the spark job came from repartitioning after a big explode command and from horizontal scaling, each saving approximately 10 minutes (14% reduction in total). The purpose of the repartition can be seen in the image below. Prior to the explode, the data would have been stored in 50 rows. After the explode, the data would contain roughly 600,000 rows and over 30 columns. In this case, repartitioning guarantees that the new dataframe is evenly distributed across the cluster, reducing the overall workload for the cluster. Horizontal scaling was able to reduce the time by increasing the amount of executor memory. This in turn reduced the time necessary for garbage collection.
+
+<p align="center">
+<img src = "./Images/explode.JPG" width="800" class="center">
+</p>
+
+## Relational Database
+
+Based on the Schema, there are 3 distinct entities. There is the patient and all their relevant attributes, the drugs that they were taking, and the reactions that they experienced. This can be very clearly seen from the schema of the JSON files, shown below.
+
+<p align="center">
+<img src = "./Images/schema-breakdown.jpg" width="800" class="center">
+</p>
+
+The relational database is then formed from these three tables, along with another table to distinguish the "bad cases". These bad cases are considered those that contain contradicting information, for example, a case where the drug is listed as "Oral" and "Intravenous". It cannot be both, and therefore it would be dangerous for a data scientist to develop an algorithm that relies on innacurate data. The relational database can be seen in the diagram below. 
+
+<p align="center">
+<img src = "./Images/RDB.JPG" width="800" class="center">
+</p>
 
 <hr/>
 
