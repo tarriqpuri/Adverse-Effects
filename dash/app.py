@@ -20,8 +20,8 @@ pgconnect = psycopg2.connect(
 host = 'ec2-34-229-140-20.compute-1.amazonaws.com',
 port = 5431,
 database = 'test',
-user = 'tarriq',
-password = "insight")
+user = '',
+password = "")
 pgcursor = pgconnect.cursor()
 
 pgcursor.execute("SELECT column_name "
