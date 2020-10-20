@@ -17,9 +17,15 @@ The presentation slides can be found [here](https://docs.google.com/presentation
 
 In the United States, it is estimated that 100 000 people pass away annually due to adverse drug reactions. The goal of the project is to enable a team of data scientists to develop machine learning algorithms for predicting death in a patient prior to the administration of a drug with the aim of saving lives. To this end, the data can be difficult to obtain and understand. This project provides (1) a data pipeline that gives the data scientist access to the data and (2) a data exploration tool that enables feature engineering. 
 
+## Demo
+
+The dashboard provides the data scientist with the ability to explore the data. The min scatter plot identifies trends and outliers while the pie chart shows the data breakdown.
+
+[![Play demo on youtube](./Images/demo.gif)](https://www.youtube.com/watch?v=MJQGeNcrFE0&ab_channel=TarikPurivatra)
+
 ## Architecture
 
-The data pipeline includes S3, Spark, PostgreSQL, Airflow, and Dash. S3 stores each JSON file which is obtained through the OpenFDA API. Spark is used to make sense of the nested JSON data. This includes column explodes, date formatting, quality control, and id generation. Inspired by the schema of the JSON file, the data is split into 4 tables: Patients, Drugs, Reactions and Bad Cases. These four databases are written into PostgreSQL for ease of query. Group By queries are run to organize the data for visualization by Dash. 
+The data pipeline includes S3, Spark, PostgreSQL, Airflow, and Dash. S3 stores each JSON file which is obtained through the OpenFDA API. Spark is used to make sense of the nested JSON data. This includes column explodes, date formatting, quality control, and id generation. Inspired by the schema of the JSON file, the data is split into 4 tables: Patients, Drugs, Reactions and Bad Cases. These four databases are written into PostgreSQL for ease of query. Group By queries are run to organize the data for visualization by Dash. Airflow is used to update the data quarterly. 
 
 <p align="center">
 <img src = "./Images/tech-stack.JPG" width="800" class="center">
