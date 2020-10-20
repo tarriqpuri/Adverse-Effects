@@ -21,7 +21,7 @@ In the United States, it is estimated that 100 000 people pass away annually due
 
 The dashboard provides the data scientist with the ability to explore the data. The min scatter plot identifies trends and outliers while the pie chart shows the data breakdown.
 
-[![Play demo on youtube](./Images/demo.gif)](https://www.youtube.com/watch?v=MJQGeNcrFE0&ab_channel=TarikPurivatra)
+[![Play demo on youtube](./Images/Demo.gif)](https://www.youtube.com/watch?v=MJQGeNcrFE0&ab_channel=TarikPurivatra)
 
 ## Architecture
 
