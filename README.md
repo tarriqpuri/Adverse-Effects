@@ -7,6 +7,7 @@ The presentation slides can be found [here](https://docs.google.com/presentation
 
 ## Table of Contents
 - [Introduction](#introduction)
+- [Demo](#demo)
 - [Architecture](#architecture)
 - [Dataset](#dataset)
 - [Spark Optimization](#spark-optimization)
@@ -19,9 +20,13 @@ In the United States, it is estimated that 100 000 people pass away annually due
 
 ## Demo
 
-The dashboard provides the data scientist with the ability to explore the data. The min scatter plot identifies trends and outliers while the pie chart shows the data breakdown.
+The dashboard provides the data scientist with the ability to explore the data. The scatter plot identifies trends and outliers for a given feature while the pie chart shows the breakdown for the data. Play the full demo on youtube [here](https://www.youtube.com/watch?v=MJQGeNcrFE0&ab_channel=TarikPurivatra).
 
-[![Play demo on youtube](./Images/Demo.gif)](https://www.youtube.com/watch?v=MJQGeNcrFE0&ab_channel=TarikPurivatra)
+<p align="center">
+<img src = "./Images/Demo.gif" width="600" class="center">
+</p>
+
+
 
 ## Architecture
 
@@ -67,4 +72,23 @@ The relational database is then formed from these three tables, along with anoth
 
 <hr/>
 
+## Future Work
+
+This project can be further expanded by the following:
+* Providing more capabilities for feature engineering, such as additional filtration tools
+* Design a more robust system for filtering out bad cases
+
 ## How to install and get it up and running
+
+* Install spark on master node and configure slaves.sh to include worker nodes
+* Install postgreSQL on separate server with a new user and new database
+* Include postgres credentials as environment variables in profile or directly in the code
+* Run Spark-Submit command: 
+```spark-submit --driver-memory 6g --executor-memory 6g --packages com.amazonaws:aws-java-sdk:1.7.4,org.apache.hadoop:hadoop-aws:2.7.7,org.postgresql:postgresql:42.2.16 --master spark://10.0.0.5:7077 main.py ```
+* For quarterly updates with Airflow: 
+	- Initialize airflow: ```airflow initdb```
+	- Initialize the webserver: ```airflow webserver -p 8081```
+	- Run the scheduler: ```airflow scheduler```
+* To start the data exploration tool with dash: 
+    - Pip install dash, math, datetime, pandas, and psycopg2 on a new server
+    - Run ```sudo python main.py```
